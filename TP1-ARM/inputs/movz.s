@@ -1,7 +1,6 @@
 .text
-movz X0, 10
-movz X1, 0xffff
-movz X2, 2
-movz X3, 13
-HLT 0
+adds X0, X10, 1
+adds X1, X11, 11
+movz X3, 5
 
+hlt 0 
