@@ -1,0 +1,46 @@
+Nombre: Martin Bianchi 
+Mail: martinbianchi@udesa.edu.ar
+
+En el nivel 1, el código compara el input del usuario con una frase almacenada en memoria. Usando GDB, desensamblé la función phase_1 y encontré 
+que se llama a strings_not_equal, pasando como argumento la dirección 0x4c9a58. Luego inspeccioné esa dirección con x/s 0x4c9a58 y descubrí que 
+la frase correcta es "La ingratitud es hija de la soberbia.". Ingresé esa frase como input y superé la fase sin detonar la bomba.
+La ingratitud es hija de la soberbia.
+
+El nivel 2 del binario requería ingresar tres números que cumplieran condiciones específicas. El código verificaba que el tercer número fuera 
+igual a (primer_num XOR segundo_num) >> 1 y, además, que fuera negativo. Esto se descubrió al analizar las instrucciones clave: el XOR se 
+identificó en xor %ebp, %ebx, el desplazamiento aritmético apareció en sar %ebx, y la restricción de negatividad se confirmó en la función 
+misterio, donde un chequeo (test %edi, %edi) explotaba la bomba si el número no era negativo.
+Para resolverlo, calculamos los valores que cumplían estas condiciones. Por ejemplo, con primer_num = -2, segundo_num = 4, y tercer_num = -3, 
+ingresamos los números correctos y desactivamos la bomba.
+-2 4 -3
+
+En el nivel 3, el binario recibe una palabra y un número. Al analizar el código, observamos que se llama a la función sscanf con el formato "%s %d", 
+lo cual indica que se esperan exactamente esos dos valores como entrada. Además, al inspeccionar la memoria, encontramos que el programa abre el 
+archivo "palabras.txt" en modo lectura. Al desensamblar la función cuenta, vimos que implementa una búsqueda binaria recursiva que acumula los 
+índices de cada llamada al buscar una palabra específica dentro de esa lista.
+Para resolverlo, usamos el archivo palabras.txt provisto y fijamos la palabra "agrupar" que sabemos que contiene, como input. Luego, replicamos la 
+lógica de la función cuenta en Python, y al ejecutar cuenta("agrupar"), obtuvimos el número 13974. Al ingresar ambos valores juntos como 
+agrupar 13974, se desactivó la bomba sin errores.
+agrupar 13974
+
+En el nivel 4, la función phase_4 comienza verificando que el input tenga exactamente 6 caracteres usando string_length. Si no se cumple, la bomba 
+explota. Luego, recorre cada uno de esos 6 caracteres y les aplica una máscara AND 0xF para obtener su valor en hexadecimal (entre 0 y 15). Este 
+valor se usa como índice para acceder a un arreglo de enteros en la dirección 0x4cde20 (llamado array.0).
+El valor correspondiente del arreglo se suma a un acumulador (%ecx), y al final se compara ese resultado con el número 0x3a (58 en decimal). Si no 
+se cumple esa suma exacta, explota la bomba.
+La solución se encontró probando combinaciones que sumaran 58 al mapear los caracteres a índices del arreglo. Así, descubrimos que la cadena 
+"67jnoo" produce exactamente esa suma, y es aceptada como input válido.
+67jnoo
+
+Desensamblamos phase_defused porque era la única fase que nos faltaba analizar, y notamos que si num_input_strings == 4, el programa vuelve a 
+analizar el tercer input usando sscanf con el formato "%s %d %s". Luego compara el tercer string con la cadena almacenada en la dirección 0x4c714f, 
+que contiene "abrete_sesamo". Si coincide, se imprime un mensaje de éxito y se llama a secret_phase. Aprovechando que en el nivel 3 ya se ingresan 
+una palabra y un número, simplemente agregamos "abrete_sesamo" al final de ese mismo input para activar la fase secreta.
+agrupar 13974 abrete_sesamo
+
+Desensamblamos secret_phase y vimos que pedía un número entre 1 y 1001. Luego llamaba a fun7, pasándole la raíz de un árbol binario (n1 = 0x4f91f0) 
+y ese número. La función fun7 recorría el árbol: iba a la izquierda si el valor era menor, o a la derecha si era mayor, multiplicando por 2 en cada 
+paso a la izquierda y por 2 y sumando 1 al ir a la derecha. El objetivo era que fun7 devolviera 7. Como 7 en binario es 111, dedujimos que había 
+que bajar tres veces a la derecha. Usamos GDB para seguir los punteros (x/3gx) y al llegar al tercer nodo derecho (n48), encontramos que su valor 
+era 1001. Ingresamos ese número y logramos desactivar la fase secreta.
+1001
