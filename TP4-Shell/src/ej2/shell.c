@@ -171,9 +171,10 @@ int main() {
     init_commands(cmds);
 
     while (1) {
-        if (isatty(STDIN_FILENO)) {
-            write(STDOUT_FILENO, "> ", 2);
-        }
+        //if (isatty(STDIN_FILENO)) {
+        printf("Shell> ");
+        fflush(stdout);
+        //}
 
         ssize_t n = getline(&line, &len, stdin);
         if (n == -1) break;
